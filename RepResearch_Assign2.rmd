@@ -1,0 +1,76 @@
+---
+title: "RepResearch"
+author: "Kaushank"
+date: "Thursday, February 12, 2015"
+output:
+  html_document:
+    keep_md: yes
+  pdf_document:
+    keep_tex: yes
+---
+Reproducible Research: Peer Assessment 2
+
+<b>1. Assignment</b>
+
+This assignment explores the  NOAA Storm Database and attempts to answer some basic questions about severe weather events. 
+
+
+<b>2. Synopsis></b>
+NOAA maintains a public database for storm events depicting details like location,  estimates for damage to property,damage to life and property etc..
+In this report I am attempting to  investigate which events have greater impact 
+:Financial,Fatalities,Injuries, Damage to Property and Damage to Crops.
+
+Conclusion:
+From the analysis, most  physical phenomena result in injuries to people, which sometimes are fatal. By far, Tornadoes are the most dangerous events, caused ~100000 injuries on the last 60 years.
+
+When analysing the event types by the impact on the economy, we observe that floods caused $15 billions damages on the last 60 years, mostly on properties.
+
+Tornado's are by far the highest cause for injuries, and second in fatalities, whilst heat &amp; drought cause the most fatalities, but fourth in injuries. Both are in the top 5 of injuries &amp; fatalities next to Thunderstorms. Flooding  and Snow &amp; Ice . In economic damages, only the property damage really factors in the total damage, except for Heat &amp; Drought where more than 90% of damages is determined by crop damage. The #1 &amp; #2 of weather damage sources, resp. Flooding &amp; High Surf and Wind &amp; Storm cover more than 80% of all economic cost, while Wind &amp; Storm aren't even in the top 5 of victims.</p>
+
+
+<b>3.Data Processing</b>
+
+<b>3.1 Set the appropriate Working Directory </b>
+Change the working Directory to Project Directory for Assignment 2
+```{r}
+setwd("C:/Users/Dell1/Desktop/DSSGProjects/RR/RepData_PeerAssessment2")
+```
+
+<b>3.2 Load the necessary Librarries</b>
+
+```{r, echo=FALSE}
+library(R.utils) # for bunzip2 algorithm compression
+library(plyr) # for count & aggregate method
+library(reshape2) # for melt 
+library(ggplot2) # for plots
+library(scales) # for plot scaling
+library(Hmisc)
+library(knitr)
+library(markdown)
+library(car)
+
+```
+
+<b>3.2. Load source file and extract it</b>
+Unzip the data
+
+```{r}
+stormdata <- read.csv("./StormData.csv")
+damages<-aggregate(cbind(FATALITIES, INJURIES) ~ EVTYPE , stormdata, sum)
+dam<-melt(head(damages[order(-damages$FATALITIES,-damages$INJURIES),],10))
+
+stormdata$PROPDMG<-stormdata$PROPDMG*as.numeric(Recode(stormdata$PROPDMGEXP, "'0'=1;'1'=10;'2'=100;'3'=1000;'4'=10000;'5'=100000;'6'=1000000;'7'=10000000;'8'=100000000;'B'=1000000000;'h'=100;'H'=100;'K'=1000;'m'=1000000;'M'=1000000;'-'=0;'?'=0;'+'=0",as.factor.result=FALSE))
+stormdata$CROPDMG<-stormdata$CROPDMG*as.numeric(Recode(stormdata$CROPDMGEXP, "'0'=1;'2'=100;'B'=1000000000;'k'=1000;'K'=1000;'m'=1000000;'M'=1000000;''=0;'?'=0",as.factor.result=FALSE))
+
+economic<-aggregate(cbind(PROPDMG, CROPDMG) ~ EVTYPE , stormdata, sum)
+eco<-melt(head(economic[order(-economic$PROPDMG,-economic$CROPDMG),],10))
+
+ggplot(dam, aes(x=EVTYPE,y=value,fill=variable)) + geom_bar(stat = "identity") + coord_flip() +
+  ggtitle("Harmful events") + labs(x = "", y="number of people impacted") +
+  scale_fill_manual (values=c("blue","red"), labels=c("Deaths","Injuries"))
+
+ggplot(eco, aes(x=EVTYPE,y=value,fill=variable)) + geom_bar(stat = "identity") + coord_flip() +
+  ggtitle("Economic consequences") + labs(x = "", y="cost of damages in dollars") +
+  scale_fill_manual (values=c("yellow","green"), labels=c("Property Damage","Crop Damage"))
+
+```
